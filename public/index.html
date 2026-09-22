@@ -5,39 +5,82 @@
     <title>Letschat</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .box { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .box { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 750px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .hidden { display: none; }
         input, select, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        
+        /* تقسيم واجهة الشات وقائمة الأعضاء */
+        .chat-container { display: flex; gap: 15px; }
+        .chat-main { flex: 3; }
+        .users-sidebar { flex: 1; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; padding: 10px; height: 320px; overflow-y: auto; }
+        .users-sidebar h4 { margin-top: 0; color: #28a745; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .user-item { padding: 5px 0; font-size: 13px; color: #333; display: flex; align-items: center; gap: 5px; }
+        .online-dot { width: 8px; height: 8px; background-color: #28a745; border-radius: 50%; display: inline-block; }
+
         #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #fafafa; }
         .msg { margin-bottom: 10px; }
         .msg span { font-weight: bold; color: #007bff; }
+        
+        /* شريط أدوات الإدخال والإيموجي */
+        .input-bar { display: flex; gap: 5px; align-items: center; position: relative; }
+        .emoji-btn { width: 45px; background: #ffc107; color: #000; font-size: 18px; }
+        .emoji-picker { display: none; position: absolute; bottom: 50px; right: 0; background: white; border: 1px solid #ccc; border-radius: 8px; padding: 8px; width: 220px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 10; }
+        .emoji-picker span { font-size: 20px; cursor: pointer; text-align: center; border-radius: 4px; }
+        .emoji-picker span:hover { background: #eee; }
         video { width: 48%; border-radius: 5px; background: #000; }
     </style>
 </head>
 <body>
 
 <!-- شاشة تسجيل الدخول -->
-<div id="login-screen" class="box">
+<div id="login-screen" class="box" style="max-width: 400px;">
     <h2>تسجيل الدخول - Letschat</h2>
     <input type="text" id="username" placeholder="اكتب اسمك هنا...">
-    
     <label for="special-date">اختر التاريخ المميز:</label>
-    <!-- اختيار تاريخ يغطي 100 سنة من 1926 إلى 2026 -->
     <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
-    
     <button onclick="login()">دخول</button>
     <p id="error-msg" style="color:red;"></p>
 </div>
 
-<!-- شاشة الشات -->
+<!-- شاشة الشات الرئيسية -->
 <div id="chat-screen" class="box hidden">
     <h2>غرفة الدردشة الخاصة</h2>
-    <div id="chat-box"></div>
     
-    <input type="text" id="message-input" placeholder="اكتب رسالتك...">
-    <input type="file" id="file-input">
-    <button onclick="sendMessage()">إرسال</button>
+    <div class="chat-container">
+        <!-- منطقة الشات -->
+        <div class="chat-main">
+            <div id="chat-box"></div>
+            
+            <div class="input-bar">
+                <input type="text" id="message-input" placeholder="اكتب رسالتك...">
+                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
+                
+                <!-- لوحة الإيموجي -->
+                <div id="emoji-picker" class="emoji-picker hidden">
+                    <span onclick="addEmoji('😊')">😊</span>
+                    <span onclick="addEmoji('😂')">😂</span>
+                    <span onclick="addEmoji('❤️')">❤️</span>
+                    <span onclick="addEmoji('👍')">👍</span>
+                    <span onclick="addEmoji('🔥')">🔥</span>
+                    <span onclick="addEmoji('😍')">😍</span>
+                    <span onclick="addEmoji('😎')">😎</span>
+                    <span onclick="addEmoji('🎉')">🎉</span>
+                    <span onclick="addEmoji('🙏')">🙏</span>
+                    <span onclick="addEmoji('👏')">👏</span>
+                </div>
+            </div>
+            
+            <input type="file" id="file-input">
+            <button onclick="sendMessage()">إرسال</button>
+        </div>
+
+        <!-- شريط الأعضاء النشطين -->
+        <div class="users-sidebar">
+            <h4>الأعضاء النشطين (<span id="user-count">0</span>)</h4>
+            <div id="users-list"></div>
+        </div>
+    </div>
     
     <hr>
     <h3>مكالمة الصوت والفيديو</h3>
@@ -54,22 +97,16 @@
     let localStream, peerConnection;
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-function login() {
-    const username = document.getElementById('username').value.trim();
-    const dateInput = document.getElementById('special-date').value; // الصيغة التلقائية YYYY-MM-DD
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const dateInput = document.getElementById('special-date').value;
+        if (!username || !dateInput) return alert('برجاء ملء جميع البيانات');
 
-    if (!username || !dateInput) {
-        alert('برجاء كتابة الاسم واختيار التاريخ');
-        return;
+        const parts = dateInput.split('-');
+        const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+        socket.emit('join', { username, date: formattedDate });
     }
-
-    // تحويل صيغة YYYY-MM-DD إلى DD.MM.YYYY
-    const parts = dateInput.split('-');
-    const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-
-    // إرسال البيانات للسيرفر للتحقق
-    socket.emit('join', { username, date: formattedDate });
-}
 
     socket.on('access-denied', (msg) => {
         document.getElementById('error-msg').innerText = msg;
@@ -80,11 +117,34 @@ function login() {
         document.getElementById('chat-screen').classList.remove('hidden');
     });
 
+    // تحديث قائمة الأعضاء النشطين
+    socket.on('update-user-list', (users) => {
+        const list = document.getElementById('users-list');
+        document.getElementById('user-count').innerText = users.length;
+        list.innerHTML = '';
+        users.forEach(user => {
+            list.innerHTML += `<div class="user-item"><span class="online-dot"></span>${user}</div>`;
+        });
+    });
+
     socket.on('system-message', (msg) => {
         const box = document.getElementById('chat-box');
-        box.innerHTML += `<div style="color:gray; font-size:12px; text-align:center;">${msg}</div>`;
+        box.innerHTML += `<div style="color:gray; font-size:12px; text-align:center; margin: 5px 0;">${msg}</div>`;
         box.scrollTop = box.scrollHeight;
     });
+
+    // إتاحة واستخدام الإيموجي
+    function toggleEmojiPicker() {
+        const picker = document.getElementById('emoji-picker');
+        picker.classList.toggle('hidden');
+    }
+
+    function addEmoji(emoji) {
+        const input = document.getElementById('message-input');
+        input.value += emoji;
+        document.getElementById('emoji-picker').classList.add('hidden');
+        input.focus();
+    }
 
     function sendMessage() {
         const text = document.getElementById('message-input').value;
@@ -123,7 +183,7 @@ function login() {
         box.scrollTop = box.scrollHeight;
     });
 
-    // إعداد المكالمات
+    // إعدادات المكالمات
     async function startCall() {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('localVideo').srcObject = localStream;
