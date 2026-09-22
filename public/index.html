@@ -21,14 +21,11 @@
 <div id="login-screen" class="box">
     <h2>تسجيل الدخول - Letschat</h2>
     <input type="text" id="username" placeholder="اكتب اسمك هنا...">
-    <label>اختر التاريخ المميز:</label>
-    <select id="special-date">
-        <option value="">-- اختر التاريخ --</option>
-        <option value="01.01.2000">01.01.2000</option>
-        <option value="13.01.2007">13.01.2007</option>
-        <option value="15.05.2010">15.05.2010</option>
-        <option value="20.12.2015">20.12.2015</option>
-    </select>
+    
+    <label for="special-date">اختر التاريخ المميز:</label>
+    <!-- اختيار تاريخ يغطي 100 سنة من 1926 إلى 2026 -->
+    <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
+    
     <button onclick="login()">دخول</button>
     <p id="error-msg" style="color:red;"></p>
 </div>
@@ -57,12 +54,22 @@
     let localStream, peerConnection;
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    function login() {
-        const username = document.getElementById('username').value.trim();
-        const date = document.getElementById('special-date').value;
-        if (!username || !date) return alert('برجاء ملء جميع البيانات');
-        socket.emit('join', { username, date });
+function login() {
+    const username = document.getElementById('username').value.trim();
+    const dateInput = document.getElementById('special-date').value; // الصيغة التلقائية YYYY-MM-DD
+
+    if (!username || !dateInput) {
+        alert('برجاء كتابة الاسم واختيار التاريخ');
+        return;
     }
+
+    // تحويل صيغة YYYY-MM-DD إلى DD.MM.YYYY
+    const parts = dateInput.split('-');
+    const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+    // إرسال البيانات للسيرفر للتحقق
+    socket.emit('join', { username, date: formattedDate });
+}
 
     socket.on('access-denied', (msg) => {
         document.getElementById('error-msg').innerText = msg;
