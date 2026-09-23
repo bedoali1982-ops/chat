@@ -1,14 +1,17 @@
 {
-  "name": "letschat-app",
+  "name": "chat-app",
   "version": "1.0.0",
-  "description": "Private Chat Web App",
+  "description": "تطبيق دردشة جماعية مع حفظ الرسائل في MongoDB وحمايتها بكلمة سر",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "nodemailer": "^6.9.1",
-    "socket.io": "^4.6.1"
+    "express": "^4.19.2",
+    "mongoose": "^8.3.0",
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
