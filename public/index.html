@@ -1,432 +1,275 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letschat - غرفة الدردشة الخاصة</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.8);
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --danger: #ef4444;
-            --success: #22c55e;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق الدردشة الجماعية</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
 
-        .box {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            padding: 25px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 850px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-        }
+    .chat-container {
+      width: 100%;
+      max-width: 600px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      overflow: hidden;
+    }
 
-        .hidden { display: none !important; }
+    /* الهيدر / الشريط العلوي */
+    .chat-header {
+      background-color: #007bff;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        input, select, button {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: #0f172a;
-            color: var(--text);
-            box-sizing: border-box;
-            font-size: 14px;
-        }
+    .chat-header h2 {
+      font-size: 1.2rem;
+    }
 
-        button {
-            background: var(--primary);
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
+    .clear-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
 
-        button:hover { background: var(--primary-hover); }
+    .clear-btn:hover {
+      background-color: #bd2130;
+    }
 
-        /* الشات والقائمة الجانبية */
-        .chat-container { display: flex; gap: 15px; }
-        .chat-main { flex: 3; }
-        .users-sidebar {
-            flex: 1;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            height: 340px;
-            overflow-y: auto;
-        }
+    /* منطقة عرض الرسائل */
+    .messages-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background-color: #f9f9f9;
+    }
 
-        .users-sidebar h4 {
-            margin: 0 0 10px 0;
-            color: var(--success);
-            font-size: 14px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
-        }
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background-color: #e9ecef;
+      align-self: flex-start;
+      word-wrap: break-word;
+    }
 
-        .user-item {
-            padding: 6px 0;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+    .message.my-message {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
 
-        .online-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--success);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--success);
-        }
+    .message .sender-name {
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 3px;
+      color: #555;
+    }
 
-        #chat-box {
-            height: 320px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            background: #0b0f19;
-        }
+    .message.my-message .sender-name {
+      color: #e0e0e0;
+    }
 
-        .msg { margin-bottom: 12px; line-height: 1.4; }
-        .msg span { font-weight: bold; color: #818cf8; }
+    .message .text {
+      font-size: 0.95rem;
+    }
 
-        /* شريط الأدوات ولوحة الإيموجي */
-        .input-bar { display: flex; gap: 8px; align-items: center; position: relative; }
-        .emoji-btn { width: 50px; background: #334155; font-size: 18px; }
-        .emoji-picker {
-            position: absolute;
-            bottom: 55px;
-            right: 0;
-            background: #1e293b;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 10px;
-            width: 280px;
-            height: 180px;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 6px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            z-index: 10;
-        }
+    /* نموذج إدخال البيانات */
+    .chat-footer {
+      padding: 15px;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-        .emoji-picker span {
-            font-size: 20px;
-            cursor: pointer;
-            text-align: center;
-            padding: 4px;
-            border-radius: 6px;
-        }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
 
-        .emoji-picker span:hover { background: #334155; }
+    input[type="text"] {
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
 
-        /* أزرار المكالمات */
-        .call-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
+    input[type="text"]:focus {
+      border-color: #007bff;
+    }
 
-        .btn-call { background: #059669; }
-        .btn-call:hover { background: #047857; }
-        .btn-hangup { background: var(--danger); }
-        .btn-hangup:hover { background: #dc2626; }
+    .username-input {
+      width: 100%;
+    }
 
-        .video-grid {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
+    .message-input {
+      flex: 1;
+    }
 
-        video {
-            width: 50%;
-            height: 180px;
-            border-radius: 8px;
-            background: #000;
-            border: 1px solid var(--border);
-            object-fit: cover;
-        }
-    </style>
+    .send-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .send-btn:hover {
+      background-color: #218838;
+    }
+  </style>
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول -->
-<div id="login-screen" class="box" style="max-width: 400px;">
-    <h2 style="text-align: center; margin-bottom: 20px;">Letschat 💬</h2>
-    <input type="text" id="username" placeholder="اسم المستخدم...">
-    <label for="special-date" style="font-size: 13px; color: var(--text-muted);">اختر التاريخ المميز:</label>
-    <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
-    <button onclick="login()">دخول الغرفة</button>
-    <p id="error-msg" style="color: var(--danger); text-align: center; font-size: 13px;"></p>
-</div>
-
-<!-- شاشة الشات الرئيسية -->
-<div id="chat-screen" class="box hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3 style="margin:0;">غرفة الدردشة الخاصة</h3>
-    </div>
-    
-    <div class="chat-container">
-        <!-- منطقة الشات -->
-        <div class="chat-main">
-            <div id="chat-box"></div>
-            
-            <div class="input-bar">
-                <input type="text" id="message-input" placeholder="اكتب رسالتك...">
-                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
-                
-                <!-- باقة الإيموجي الموسعة -->
-                <div id="emoji-picker" class="emoji-picker hidden">
-                    <!-- الوجوه والتعبيرات -->
-                    <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('🤣')">🤣</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('😍')">😍</span><span onclick="addEmoji('😎')">😎</span>
-                    <span onclick="addEmoji('😇')">😇</span><span onclick="addEmoji('🥳')">🥳</span><span onclick="addEmoji('🤔')">🤔</span><span onclick="addEmoji('😅')">😅</span><span onclick="addEmoji('😭')">😭</span><span onclick="addEmoji('😜')">😜</span>
-                    <span onclick="addEmoji('🙈')">🙈</span><span onclick="addEmoji('🔥')">🔥</span><span onclick="addEmoji('✨')">✨</span><span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('💯')">💯</span><span onclick="addEmoji('🚀')">🚀</span>
-                    <!-- الإيماءات والأيادي -->
-                    <span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('👎')">👎</span><span onclick="addEmoji('👏')">👏</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('🙏')">🙏</span><span onclick="addEmoji('🤝')">🤝</span>
-                    <span onclick="addEmoji('✌️')">✌️</span><span onclick="addEmoji('💪')">💪</span><span onclick="addEmoji('👌')">👌</span><span onclick="addEmoji('🫡')">🫡</span><span onclick="addEmoji('👋')">👋</span><span onclick="addEmoji('👇')">👇</span>
-                    <!-- القلوب والتفاعلات -->
-                    <span onclick="addEmoji('💖')">💖</span><span onclick="addEmoji('💙')">💙</span><span onclick="addEmoji('💚')">💚</span><span onclick="addEmoji('💛')">💛</span><span onclick="addEmoji('💜')">💜</span><span onclick="addEmoji('🖤')">🖤</span>
-                    <span onclick="addEmoji('💥')">💥</span><span onclick="addEmoji('⭐')">⭐</span><span onclick="addEmoji('🌟')">🌟</span><span onclick="addEmoji('🎁')">🎁</span><span onclick="addEmoji('☕')">☕</span><span onclick="addEmoji('🍕')">🍕</span>
-                </div>
-            </div>
-            
-            <input type="file" id="file-input">
-            <button onclick="sendMessage()">إرسال الرسالة</button>
-        </div>
-
-        <!-- شريط الأعضاء النشطين -->
-        <div class="users-sidebar">
-            <h4>متصل الآن (<span id="user-count">0</span>)</h4>
-            <div id="users-list"></div>
-        </div>
-    </div>
-    
-    <hr style="border-color: var(--border); margin: 20px 0;">
-    
-    <!-- منطقة المكالمات المحدثة -->
-    <h4 style="margin: 0 0 10px 0;">المكالمات والتواصل الصوتي / الفيديو</h4>
-    <div class="call-controls">
-        <button class="btn-call" onclick="startCall(true)">🎥 بدء مكالمة فيديو</button>
-        <button class="btn-call" onclick="startCall(false)">📞 بدء مكالمة صوتية</button>
-        <button class="btn-hangup" onclick="endCall()">❌ إنهاء المكالمة</button>
+  <div class="chat-container">
+    <!-- الشريط العلوي -->
+    <div class="chat-header">
+      <h2>💬 غرفة الدردشة</h2>
+      <button class="clear-btn" onclick="clearChat()">🗑️ مسح الشات</button>
     </div>
 
-    <div class="video-grid">
-        <video id="localVideo" autoplay muted></video>
-        <video id="remoteVideo" autoplay></video>
-    </div>
-</div>
+    <!-- صندوق عرض الرسائل -->
+    <div class="messages-container" id="messages-container"></div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
+    <!-- منطقة الكتابة والإرسال -->
+    <div class="chat-footer">
+      <input type="text" id="username" class="username-input" placeholder="اكتب اسمك هنا..." />
+      <div class="input-row">
+        <input type="text" id="message-input" class="message-input" placeholder="اكتب رسالتك..." onkeypress="handleKeyPress(event)" />
+        <button class="send-btn" onclick="sendMessage()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مكتبة Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // الاتصال بالسيرفر
     const socket = io();
-    let localStream, peerConnection;
-    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    function login() {
-        const username = document.getElementById('username').value.trim();
-        const dateInput = document.getElementById('special-date').value;
-        if (!username || !dateInput) return alert('برجاء ملء جميع البيانات');
+    const messagesContainer = document.getElementById('messages-container');
+    const usernameInput = document.getElementById('username');
+    const messageInput = document.getElementById('message-input');
 
-        const parts = dateInput.split('-');
-        const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-
-        socket.emit('join', { username, date: formattedDate });
-    }
-
-    socket.on('access-denied', (msg) => {
-        document.getElementById('error-msg').innerText = msg;
+    // 1. استقبال الرسائل القديمة المخزنة عند الدخول للموقع
+    socket.on('load_messages', (messages) => {
+      messagesContainer.innerHTML = ''; // تفريغ القائمة أولاً
+      messages.forEach(msg => {
+        appendMessage(msg.sender, msg.text);
+      });
+      scrollToBottom();
     });
 
-    socket.on('access-granted', () => {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('chat-screen').classList.remove('hidden');
+    // 2. استقبال رسالة جديدة من أحد المتصلين
+    socket.on('receive_message', (data) => {
+      appendMessage(data.sender, data.text);
+      scrollToBottom();
     });
 
-    socket.on('update-user-list', (users) => {
-        const list = document.getElementById('users-list');
-        document.getElementById('user-count').innerText = users.length;
-        list.innerHTML = '';
-        users.forEach(user => {
-            list.innerHTML += `<div class="user-item"><span class="online-dot"></span>${user}</div>`;
-        });
-    });
-
-    socket.on('system-message', (msg) => {
-        const box = document.getElementById('chat-box');
-        box.innerHTML += `<div style="color:var(--text-muted); font-size:12px; text-align:center; margin: 6px 0;">${msg}</div>`;
-        box.scrollTop = box.scrollHeight;
-    });
-
-    function toggleEmojiPicker() {
-        document.getElementById('emoji-picker').classList.toggle('hidden');
-    }
-
-    function addEmoji(emoji) {
-        const input = document.getElementById('message-input');
-        input.value += emoji;
-        document.getElementById('emoji-picker').classList.add('hidden');
-        input.focus();
-    }
-
+    // 3. إرسال رسالة جديدة
     function sendMessage() {
-        const text = document.getElementById('message-input').value;
-        const fileInput = document.getElementById('file-input');
-        const file = fileInput.files[0];
+      const sender = usernameInput.value.trim() || 'زائر';
+      const text = messageInput.value.trim();
 
-        if (!text && !file) return;
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                socket.emit('chat-message', { text, file: e.target.result, fileName: file.name, fileType: file.type });
-            };
-            reader.readAsDataURL(file);
-        } else {
-            socket.emit('chat-message', { text });
-        }
-
-        document.getElementById('message-input').value = '';
-        fileInput.value = '';
+      if (text !== '') {
+        socket.emit('send_message', { sender, text });
+        messageInput.value = '';
+        messageInput.focus();
+      }
     }
 
-    socket.on('new-message', (data) => {
-        const box = document.getElementById('chat-box');
-        let content = `<div class="msg"><span>${data.username}:</span> ${data.text || ''}`;
-        
-        if (data.file) {
-            if (data.fileType.startsWith('image/')) {
-                content += `<br><img src="${data.file}" style="max-width:200px; border-radius:8px; margin-top:5px;">`;
-            } else {
-                content += `<br><a href="${data.file}" download="${data.fileName}" style="color:#38bdf8;">تحميل الملف (${data.fileName})</a>`;
-            }
-        }
-        content += `</div>`;
-        box.innerHTML += content;
-        box.scrollTop = box.scrollHeight;
-    });
-
-    // التحكم بالصوت والفيديو وإغلاق المكالمة
-    async function startCall(isVideo) {
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('call-user', { offer, isVideo });
-        } catch (err) {
-            alert('تعذر الوصول إلى الكاميرا/المايكروفون.');
-        }
+    // الإرسال عند الضغط على Enter
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
     }
 
-    function endCall() {
-        if (peerConnection) {
-            peerConnection.close();
-            peerConnection = null;
-        }
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-            localStream = null;
-        }
-        document.getElementById('localVideo').srcObject = null;
-        document.getElementById('remoteVideo').srcObject = null;
-        socket.emit('end-call');
+    // 4. إضافة الرسالة إلى الشاشة
+    function appendMessage(sender, text) {
+      const myName = usernameInput.value.trim() || 'زائر';
+
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      
+      if (sender === myName) {
+        messageDiv.classList.add('my-message');
+      }
+
+      const senderDiv = document.createElement('div');
+      senderDiv.classList.add('sender-name');
+      senderDiv.textContent = sender;
+
+      const textDiv = document.createElement('div');
+      textDiv.classList.add('text');
+      textDiv.textContent = text;
+
+      messageDiv.appendChild(senderDiv);
+      messageDiv.appendChild(textDiv);
+
+      messagesContainer.appendChild(messageDiv);
     }
 
-    socket.on('incoming-call', async ({ offer, isVideo }) => {
-        const typeStr = isVideo ? 'فيديو' : 'صوتية';
-        if (confirm(`هناك مكالمة ${typeStr} واردة، هل تريد الرد؟`)) {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
+    // 5. دالة طلب مسح الشات بكلمة السر
+    function clearChat() {
+      const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
+      if (password) {
+        socket.emit('clear_chat', { password });
+      }
+    }
 
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('answer-call', answer);
-        }
+    // 6. عند نجاح المسح في السيرفر
+    socket.on('chat_cleared', () => {
+      messagesContainer.innerHTML = '';
+      alert('✅ تم مسح جميع الرسائل بنجاح.');
     });
 
-    socket.on('call-answered', async (answer) => {
-        if (peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        }
+    // 7. عند كتابة كلمة سر خاطئة
+    socket.on('error_message', (msg) => {
+      alert(msg);
     });
 
-    socket.on('ice-candidate', async (candidate) => {
-        if (peerConnection) await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    });
+    // التمرير التلقائي لأسفل صندوق المحادثة
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  </script>
 
-    socket.on('call-ended', () => {
-        alert('تم إنهاء المكالمة من الطرف الآخر.');
-        endCall();
-    });
-    <button onclick="clearChat()">🗑️ مسح جميع الرسائل</button>
-    // 1. استقبال الرسائل القديمة عند فتح الموقع
-socket.on('load_messages', (messages) => {
-  const chatBox = document.getElementById('messages-container');
-  chatBox.innerHTML = ''; // تفريغ الخانة أولاً
-  messages.forEach(msg => {
-    displayMessage(msg); // دالة إظهار الرسالة لديك
-  });
-});
-
-// 2. دالة تنفذ عند الضغط على زر المسح
-function clearChat() {
-  const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
-  if (password) {
-    socket.emit('clear_chat', { password: password });
-  }
-}
-
-// 3. عندما يتم التأكد من صحة كلمة السر وتفريغ قاعدة البيانات
-socket.on('chat_cleared', () => {
-  document.getElementById('messages-container').innerHTML = '';
-  alert('✅ تم مسح جميع الرسائل بنجاح.');
-});
-
-// 4. في حالة كتابة كلمة سر خاطئة
-socket.on('error_message', (msg) => {
-  alert(msg);
-});
-</script>
 </body>
 </html>
