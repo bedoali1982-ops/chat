@@ -400,6 +400,33 @@
         endCall();
     });
     <button onclick="clearChat()">🗑️ مسح جميع الرسائل</button>
+    // 1. استقبال الرسائل القديمة عند فتح الموقع
+socket.on('load_messages', (messages) => {
+  const chatBox = document.getElementById('messages-container');
+  chatBox.innerHTML = ''; // تفريغ الخانة أولاً
+  messages.forEach(msg => {
+    displayMessage(msg); // دالة إظهار الرسالة لديك
+  });
+});
+
+// 2. دالة تنفذ عند الضغط على زر المسح
+function clearChat() {
+  const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
+  if (password) {
+    socket.emit('clear_chat', { password: password });
+  }
+}
+
+// 3. عندما يتم التأكد من صحة كلمة السر وتفريغ قاعدة البيانات
+socket.on('chat_cleared', () => {
+  document.getElementById('messages-container').innerHTML = '';
+  alert('✅ تم مسح جميع الرسائل بنجاح.');
+});
+
+// 4. في حالة كتابة كلمة سر خاطئة
+socket.on('error_message', (msg) => {
+  alert(msg);
+});
 </script>
 </body>
 </html>
