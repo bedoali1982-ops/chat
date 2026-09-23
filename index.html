@@ -13,7 +13,7 @@
     }
 
     body {
-      background-color: #f0f2f5;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -21,21 +21,85 @@
       padding: 10px;
     }
 
-    .chat-container {
-      width: 100%;
-      max-width: 600px;
+    /* ------------------- صفحة تسجيل الدخول بالتاريخ ------------------- */
+    .login-card {
       background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      display: flex;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .login-card h2 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+    }
+
+    .login-card p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .login-card input[type="date"],
+    .login-card input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      text-align: center;
+      outline: none;
+    }
+
+    .login-card input:focus {
+      border-color: #2a5298;
+    }
+
+    .login-btn {
+      width: 100%;
+      background: #2a5298;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .login-btn:hover {
+      background: #1e3c72;
+    }
+
+    .error-msg {
+      color: #dc3545;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ------------------- واجهة الشات الرئيسية ------------------- */
+    .chat-container {
+      display: none; /* مخفية حتى يتم تأكيد التاريخ */
+      width: 100%;
+      max-width: 650px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
       flex-direction: column;
       height: 90vh;
       overflow: hidden;
     }
 
-    /* الهيدر / الشريط العلوي */
+    /* الشريط العلوي للشات */
     .chat-header {
-      background-color: #007bff;
+      background-color: #2a5298;
       color: white;
       padding: 15px 20px;
       display: flex;
@@ -70,20 +134,21 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background-color: #f9f9f9;
+      background-color: #f4f6f9;
     }
 
     .message {
       max-width: 80%;
       padding: 10px 14px;
-      border-radius: 10px;
-      background-color: #e9ecef;
+      border-radius: 12px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
       align-self: flex-start;
       word-wrap: break-word;
     }
 
     .message.my-message {
-      background-color: #007bff;
+      background-color: #2a5298;
       color: white;
       align-self: flex-end;
     }
@@ -92,11 +157,11 @@
       font-size: 0.75rem;
       font-weight: bold;
       margin-bottom: 3px;
-      color: #555;
+      color: #777;
     }
 
     .message.my-message .sender-name {
-      color: #e0e0e0;
+      color: #d0e1ff;
     }
 
     .message .text {
@@ -107,7 +172,7 @@
     .chat-footer {
       padding: 15px;
       background-color: #fff;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid #eee;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -118,24 +183,24 @@
       gap: 10px;
     }
 
-    input[type="text"] {
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      outline: none;
-    }
-
-    input[type="text"]:focus {
-      border-color: #007bff;
-    }
-
-    .username-input {
-      width: 100%;
+    .username-display {
+      font-size: 0.85rem;
+      color: #555;
+      font-weight: bold;
+      padding-bottom: 2px;
     }
 
     .message-input {
       flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .message-input:focus {
+      border-color: #2a5298;
     }
 
     .send-btn {
@@ -143,7 +208,7 @@
       color: white;
       border: none;
       padding: 10px 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
       transition: background 0.2s;
@@ -156,19 +221,29 @@
 </head>
 <body>
 
-  <div class="chat-container">
-    <!-- الشريط العلوي -->
+  <!-- 1. شاشة الدخول بالتاريخ المميز -->
+  <div class="login-card" id="login-card">
+    <h2>🔒 مرحباً بك</h2>
+    <p>يرجى إدخال اسمك والتاريخ المميز للدخول إلى الشات</p>
+    
+    <input type="text" id="user-name-input" placeholder="اكتب اسمك هنا..." />
+    <input type="date" id="special-date-input" />
+    
+    <button class="login-btn" onclick="validateAndEnter()">دخول للشات</button>
+    <div class="error-msg" id="error-msg">⚠️ التاريخ المميز غير صحيح!</div>
+  </div>
+
+  <!-- 2. واجهة الدردشة الرئيسية -->
+  <div class="chat-container" id="chat-container">
     <div class="chat-header">
       <h2>💬 غرفة الدردشة</h2>
       <button class="clear-btn" onclick="clearChat()">🗑️ مسح الشات</button>
     </div>
 
-    <!-- صندوق عرض الرسائل -->
     <div class="messages-container" id="messages-container"></div>
 
-    <!-- منطقة الكتابة والإرسال -->
     <div class="chat-footer">
-      <input type="text" id="username" class="username-input" placeholder="اكتب اسمك هنا..." />
+      <div class="username-display" id="user-display">المستخدم: </div>
       <div class="input-row">
         <input type="text" id="message-input" class="message-input" placeholder="اكتب رسالتك..." onkeypress="handleKeyPress(event)" />
         <button class="send-btn" onclick="sendMessage()">إرسال</button>
@@ -180,16 +255,48 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
-    // الاتصال بالسيرفر
+    // -------------------------------------------------------------
+    // غيّر هذا التاريخ للتاريخ المميز الذي تريده (صيغة: YYYY-MM-DD)
+    // -------------------------------------------------------------
+    const SPECIAL_DATE = "2024-01-01"; 
+
+    let currentUser = "";
     const socket = io();
 
+    const loginCard = document.getElementById('login-card');
+    const chatContainer = document.getElementById('chat-container');
     const messagesContainer = document.getElementById('messages-container');
-    const usernameInput = document.getElementById('username');
     const messageInput = document.getElementById('message-input');
+    const errorMsg = document.getElementById('error-msg');
+    const userDisplay = document.getElementById('user-display');
 
-    // 1. استقبال الرسائل القديمة المخزنة عند الدخول للموقع
+    // التحقق من التاريخ المميز والدخول
+    function validateAndEnter() {
+      const nameInput = document.getElementById('user-name-input').value.trim();
+      const selectedDate = document.getElementById('special-date-input').value;
+
+      if (!nameInput) {
+        alert("يرجى كتابة اسمك أولاً!");
+        return;
+      }
+
+      if (selectedDate === SPECIAL_DATE) {
+        currentUser = nameInput;
+        userDisplay.textContent = "المستخدم الحالي: " + currentUser;
+        
+        loginCard.style.display = "none";
+        chatContainer.style.display = "flex";
+        
+        // التمرير لأسفل المحادثة فور الدخول
+        scrollToBottom();
+      } else {
+        errorMsg.style.display = "block";
+      }
+    }
+
+    // 1. استقبال الرسائل القديمة المخزنة عند فتح الموقع
     socket.on('load_messages', (messages) => {
-      messagesContainer.innerHTML = ''; // تفريغ القائمة أولاً
+      messagesContainer.innerHTML = '';
       messages.forEach(msg => {
         appendMessage(msg.sender, msg.text);
       });
@@ -204,31 +311,27 @@
 
     // 3. إرسال رسالة جديدة
     function sendMessage() {
-      const sender = usernameInput.value.trim() || 'زائر';
       const text = messageInput.value.trim();
 
       if (text !== '') {
-        socket.emit('send_message', { sender, text });
+        socket.emit('send_message', { sender: currentUser, text: text });
         messageInput.value = '';
         messageInput.focus();
       }
     }
 
-    // الإرسال عند الضغط على Enter
     function handleKeyPress(event) {
       if (event.key === 'Enter') {
         sendMessage();
       }
     }
 
-    // 4. إضافة الرسالة إلى الشاشة
+    // 4. عرض الرسالة داخل الشاشة
     function appendMessage(sender, text) {
-      const myName = usernameInput.value.trim() || 'زائر';
-
       const messageDiv = document.createElement('div');
       messageDiv.classList.add('message');
       
-      if (sender === myName) {
+      if (sender === currentUser) {
         messageDiv.classList.add('my-message');
       }
 
@@ -246,7 +349,7 @@
       messagesContainer.appendChild(messageDiv);
     }
 
-    // 5. دالة طلب مسح الشات بكلمة السر
+    // 5. دالة مسح الشات بكلمة السر
     function clearChat() {
       const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
       if (password) {
@@ -254,18 +357,17 @@
       }
     }
 
-    // 6. عند نجاح المسح في السيرفر
+    // 6. عند تأكيد مسح الشات من السيرفر
     socket.on('chat_cleared', () => {
       messagesContainer.innerHTML = '';
       alert('✅ تم مسح جميع الرسائل بنجاح.');
     });
 
-    // 7. عند كتابة كلمة سر خاطئة
+    // 7. عند كتابة كلمة سر مسح خاطئة
     socket.on('error_message', (msg) => {
       alert(msg);
     });
 
-    // التمرير التلقائي لأسفل صندوق المحادثة
     function scrollToBottom() {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
