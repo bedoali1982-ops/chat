@@ -6,59 +6,103 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { maxHttpBufferSize: 1e7, cors: { origin: "*" } });
 
-// إتاحة مجلد الملفات الثابتة وتوجيه الصفحة الرئيسية
 app.use(express.static(path.join(__dirname)));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 1. الاتصال بقاعدة البيانات
+// الاتصال بـ MongoDB
 const MONGO_URI = process.env.MONGO_URI;
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ تم الاتصال بقاعدة البيانات بنجاح'))
-  .catch((err) => console.error('❌ خطأ في قاعدة البيانات:', err));
+if (MONGO_URI) {
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log('✅ تم الاتصال بـ MongoDB بنجاح'))
+        .catch((err) => console.error('❌ خطأ MongoDB:', err));
+}
 
-// 2. تصميم شكل الرسالة المخزنة
+// نموذج الرسائل
 const MessageSchema = new mongoose.Schema({
-  sender: String,
-  text: String,
-  createdAt: { type: Date, default: Date.now }
+    sender: String,
+    text: String,
+    file: String,
+    fileName: String,
+    fileType: String,
+    createdAt: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', MessageSchema);
 
-// 3. كلمة السر لمسح الشات
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
+const activeUsers = new Map();
 
-// 4. إدارة الاتصالات في الشات
-io.on('connection', async (socket) => {
+io.on('connection', (socket) => {
 
-  // إرسال الرسائل القديمة للمستخدم فور دخوله
-  try {
-    const oldMessages = await Message.find().sort({ createdAt: 1 });
-    socket.emit('load_messages', oldMessages);
-  } catch (err) {
-    console.error(err);
-  }
+    // الانضمام والتحقق من التاريخ المميز (13.01.2007)
+    socket.on('join', async ({ username, date }) => {
+        if (date !== '13.01.2007') {
+            socket.emit('access-denied', 'التاريخ غير صحيح! التاريخ المطلوب هو 13.01.2007');
+            return;
+        }
 
-  // استقبال وإعادة إرسال الرسائل الجديدة
-  socket.on('send_message', async (data) => {
-    const newMessage = new Message({ sender: data.sender, text: data.text });
-    await newMessage.save();
-    io.emit('receive_message', newMessage);
-  });
+        socket.username = username;
+        activeUsers.set(socket.id, username);
 
-  // مسح الشات بكلمة السر
-  socket.on('clear_chat', async (data) => {
-    if (data.password === ADMIN_PASSWORD) {
-      await Message.deleteMany({});
-      io.emit('chat_cleared');
-    } else {
-      socket.emit('error_message', '❌ كلمة السر غير صحيحة!');
-    }
-  });
+        socket.emit('access-granted');
+
+        // جلب الرسائل القديمة المخزنة
+        try {
+            const oldMessages = await Message.find().sort({ createdAt: 1 });
+            socket.emit('load_messages', oldMessages);
+        } catch (err) {
+            console.error(err);
+        }
+
+        io.emit('system-message', `${username} انضم إلى الدردشة.`);
+        io.emit('update-user-list', Array.from(activeUsers.values()));
+    });
+
+    // إرسال وحفظ الرسائل
+    socket.on('send_message', async (data) => {
+        const newMsgData = {
+            sender: socket.username || data.sender,
+            text: data.text,
+            file: data.file,
+            fileName: data.fileName,
+            fileType: data.fileType
+        };
+
+        if (MONGO_URI) {
+            const savedMsg = new Message(newMsgData);
+            await savedMsg.save();
+        }
+
+        io.emit('receive_message', newMsgData);
+    });
+
+    // مسح الشات بكلمة السر
+    socket.on('clear_chat', async (data) => {
+        if (data.password === ADMIN_PASSWORD) {
+            if (MONGO_URI) await Message.deleteMany({});
+            io.emit('chat_cleared');
+        } else {
+            socket.emit('error_message', '❌ كلمة السر غير صحيحة!');
+        }
+    });
+
+    // أحداث مكالمات الصوت والفيديو
+    socket.on('call-user', (data) => socket.broadcast.emit('incoming-call', data));
+    socket.on('answer-call', (data) => socket.broadcast.emit('call-answered', data));
+    socket.on('ice-candidate', (candidate) => socket.broadcast.emit('ice-candidate', candidate));
+    socket.on('end-call', () => socket.broadcast.emit('call-ended'));
+
+    socket.on('disconnect', () => {
+        if (socket.username) {
+            activeUsers.delete(socket.id);
+            io.emit('system-message', `${socket.username} غادر الدردشة.`);
+            io.emit('update-user-list', Array.from(activeUsers.values()));
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
