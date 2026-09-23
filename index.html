@@ -1,162 +1,275 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>Letschat</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .box { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
-        input, select, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #fafafa; }
-        .msg { margin-bottom: 10px; }
-        .msg span { font-weight: bold; color: #007bff; }
-        video { width: 48%; border-radius: 5px; background: #000; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تطبيق الدردشة الجماعية</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 600px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      overflow: hidden;
+    }
+
+    /* الهيدر / الشريط العلوي */
+    .chat-header {
+      background-color: #007bff;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header h2 {
+      font-size: 1.2rem;
+    }
+
+    .clear-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .clear-btn:hover {
+      background-color: #bd2130;
+    }
+
+    /* منطقة عرض الرسائل */
+    .messages-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background-color: #f9f9f9;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background-color: #e9ecef;
+      align-self: flex-start;
+      word-wrap: break-word;
+    }
+
+    .message.my-message {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .message .sender-name {
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 3px;
+      color: #555;
+    }
+
+    .message.my-message .sender-name {
+      color: #e0e0e0;
+    }
+
+    .message .text {
+      font-size: 0.95rem;
+    }
+
+    /* نموذج إدخال البيانات */
+    .chat-footer {
+      padding: 15px;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: #007bff;
+    }
+
+    .username-input {
+      width: 100%;
+    }
+
+    .message-input {
+      flex: 1;
+    }
+
+    .send-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .send-btn:hover {
+      background-color: #218838;
+    }
+  </style>
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول -->
-<div id="login-screen" class="box">
-    <h2>تسجيل الدخول - Letschat</h2>
-    <input type="text" id="username" placeholder="اكتب اسمك هنا...">
-    <label>اختر التاريخ المميز:</label>
-    <select id="special-date">
-        <option value="">-- اختر التاريخ --</option>
-        <option value="01.01.2000">01.01.2000</option>
-        <option value="13.01.2007">13.01.2007</option>
-        <option value="15.05.2010">15.05.2010</option>
-        <option value="20.12.2015">20.12.2015</option>
-    </select>
-    <button onclick="login()">دخول</button>
-    <p id="error-msg" style="color:red;"></p>
-</div>
-
-<!-- شاشة الشات -->
-<div id="chat-screen" class="box hidden">
-    <h2>غرفة الدردشة الخاصة</h2>
-    <div id="chat-box"></div>
-    
-    <input type="text" id="message-input" placeholder="اكتب رسالتك...">
-    <input type="file" id="file-input">
-    <button onclick="sendMessage()">إرسال</button>
-    
-    <hr>
-    <h3>مكالمة الصوت والفيديو</h3>
-    <button onclick="startCall()">بدء مكالمة فيديو</button>
-    <div style="display:flex; justify-content:space-between; margin-top:10px;">
-        <video id="localVideo" autoplay muted></video>
-        <video id="remoteVideo" autoplay></video>
+  <div class="chat-container">
+    <!-- الشريط العلوي -->
+    <div class="chat-header">
+      <h2>💬 غرفة الدردشة</h2>
+      <button class="clear-btn" onclick="clearChat()">🗑️ مسح الشات</button>
     </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
+    <!-- صندوق عرض الرسائل -->
+    <div class="messages-container" id="messages-container"></div>
+
+    <!-- منطقة الكتابة والإرسال -->
+    <div class="chat-footer">
+      <input type="text" id="username" class="username-input" placeholder="اكتب اسمك هنا..." />
+      <div class="input-row">
+        <input type="text" id="message-input" class="message-input" placeholder="اكتب رسالتك..." onkeypress="handleKeyPress(event)" />
+        <button class="send-btn" onclick="sendMessage()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مكتبة Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // الاتصال بالسيرفر
     const socket = io();
-    let localStream, peerConnection;
-    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    function login() {
-        const username = document.getElementById('username').value.trim();
-        const date = document.getElementById('special-date').value;
-        if (!username || !date) return alert('برجاء ملء جميع البيانات');
-        socket.emit('join', { username, date });
-    }
+    const messagesContainer = document.getElementById('messages-container');
+    const usernameInput = document.getElementById('username');
+    const messageInput = document.getElementById('message-input');
 
-    socket.on('access-denied', (msg) => {
-        document.getElementById('error-msg').innerText = msg;
+    // 1. استقبال الرسائل القديمة المخزنة عند الدخول للموقع
+    socket.on('load_messages', (messages) => {
+      messagesContainer.innerHTML = ''; // تفريغ القائمة أولاً
+      messages.forEach(msg => {
+        appendMessage(msg.sender, msg.text);
+      });
+      scrollToBottom();
     });
 
-    socket.on('access-granted', () => {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('chat-screen').classList.remove('hidden');
+    // 2. استقبال رسالة جديدة من أحد المتصلين
+    socket.on('receive_message', (data) => {
+      appendMessage(data.sender, data.text);
+      scrollToBottom();
     });
 
-    socket.on('system-message', (msg) => {
-        const box = document.getElementById('chat-box');
-        box.innerHTML += `<div style="color:gray; font-size:12px; text-align:center;">${msg}</div>`;
-        box.scrollTop = box.scrollHeight;
-    });
-
+    // 3. إرسال رسالة جديدة
     function sendMessage() {
-        const text = document.getElementById('message-input').value;
-        const fileInput = document.getElementById('file-input');
-        const file = fileInput.files[0];
+      const sender = usernameInput.value.trim() || 'زائر';
+      const text = messageInput.value.trim();
 
-        if (!text && !file) return;
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                socket.emit('chat-message', { text, file: e.target.result, fileName: file.name, fileType: file.type });
-            };
-            reader.readAsDataURL(file);
-        } else {
-            socket.emit('chat-message', { text });
-        }
-
-        document.getElementById('message-input').value = '';
-        fileInput.value = '';
+      if (text !== '') {
+        socket.emit('send_message', { sender, text });
+        messageInput.value = '';
+        messageInput.focus();
+      }
     }
 
-    socket.on('new-message', (data) => {
-        const box = document.getElementById('chat-box');
-        let content = `<div class="msg"><span>${data.username}:</span> ${data.text || ''}`;
-        
-        if (data.file) {
-            if (data.fileType.startsWith('image/')) {
-                content += `<br><img src="${data.file}" style="max-width:200px; border-radius:5px;">`;
-            } else {
-                content += `<br><a href="${data.file}" download="${data.fileName}">تحميل الملف (${data.fileName})</a>`;
-            }
-        }
-        content += `</div>`;
-        box.innerHTML += content;
-        box.scrollTop = box.scrollHeight;
-    });
-
-    // إعداد المكالمات
-    async function startCall() {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('localVideo').srcObject = localStream;
-
-        peerConnection = new RTCPeerConnection(rtcConfig);
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-        peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-        peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        socket.emit('call-user', offer);
+    // الإرسال عند الضغط على Enter
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
     }
 
-    socket.on('incoming-call', async (offer) => {
-        if (confirm('هناك مكالمة واردة، هل تريد الرد؟')) {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
+    // 4. إضافة الرسالة إلى الشاشة
+    function appendMessage(sender, text) {
+      const myName = usernameInput.value.trim() || 'زائر';
 
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      
+      if (sender === myName) {
+        messageDiv.classList.add('my-message');
+      }
 
-            peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+      const senderDiv = document.createElement('div');
+      senderDiv.classList.add('sender-name');
+      senderDiv.textContent = sender;
 
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('answer-call', answer);
-        }
+      const textDiv = document.createElement('div');
+      textDiv.classList.add('text');
+      textDiv.textContent = text;
+
+      messageDiv.appendChild(senderDiv);
+      messageDiv.appendChild(textDiv);
+
+      messagesContainer.appendChild(messageDiv);
+    }
+
+    // 5. دالة طلب مسح الشات بكلمة السر
+    function clearChat() {
+      const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
+      if (password) {
+        socket.emit('clear_chat', { password });
+      }
+    }
+
+    // 6. عند نجاح المسح في السيرفر
+    socket.on('chat_cleared', () => {
+      messagesContainer.innerHTML = '';
+      alert('✅ تم مسح جميع الرسائل بنجاح.');
     });
 
-    socket.on('call-answered', async (answer) => {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    // 7. عند كتابة كلمة سر خاطئة
+    socket.on('error_message', (msg) => {
+      alert(msg);
     });
 
-    socket.on('ice-candidate', async (candidate) => {
-        if (peerConnection) await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    });
-</script>
+    // التمرير التلقائي لأسفل صندوق المحادثة
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  </script>
+
 </body>
 </html>
