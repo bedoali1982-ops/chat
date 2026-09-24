@@ -40,8 +40,8 @@ const activeUsers = new Map();
 io.on('connection', (socket) => {
 
     socket.on('join', async ({ username, date }) => {
-        if (date !== '13.01.2007') {
-            socket.emit('access-denied', 'التاريخ غير صحيح! التاريخ المطلوب هو 13.01.2007');
+        if (date !== '13.01.2009') {
+            socket.emit('access-denied', 'التاريخ غير صحيح!');
             return;
         }
 
