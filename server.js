@@ -22,13 +22,14 @@ if (MONGO_URI) {
         .catch((err) => console.error('❌ خطأ MongoDB:', err));
 }
 
-// نموذج الرسائل
+// نموذج الرسائل مع حفظ وقت الإنشاء
 const MessageSchema = new mongoose.Schema({
     sender: String,
     text: String,
     file: String,
     fileName: String,
     fileType: String,
+    time: String,
     createdAt: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', MessageSchema);
@@ -38,10 +39,9 @@ const activeUsers = new Map();
 
 io.on('connection', (socket) => {
 
-    // الانضمام والتحقق من التاريخ المميز (13.01.2007)
     socket.on('join', async ({ username, date }) => {
-        if (date !== '13.01.2009') {
-            socket.emit('access-denied', 'التاريخ غير صحيح! ');
+        if (date !== '13.01.2007') {
+            socket.emit('access-denied', 'التاريخ غير صحيح! التاريخ المطلوب هو 13.01.2007');
             return;
         }
 
@@ -50,7 +50,6 @@ io.on('connection', (socket) => {
 
         socket.emit('access-granted');
 
-        // جلب الرسائل القديمة المخزنة
         try {
             const oldMessages = await Message.find().sort({ createdAt: 1 });
             socket.emit('load_messages', oldMessages);
@@ -62,14 +61,18 @@ io.on('connection', (socket) => {
         io.emit('update-user-list', Array.from(activeUsers.values()));
     });
 
-    // إرسال وحفظ الرسائل
     socket.on('send_message', async (data) => {
+        // توليد الوقت الحالي بصيغة (مثلاً 03:45 م)
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+
         const newMsgData = {
             sender: socket.username || data.sender,
             text: data.text,
             file: data.file,
             fileName: data.fileName,
-            fileType: data.fileType
+            fileType: data.fileType,
+            time: timeString
         };
 
         if (MONGO_URI) {
@@ -80,7 +83,6 @@ io.on('connection', (socket) => {
         io.emit('receive_message', newMsgData);
     });
 
-    // مسح الشات بكلمة السر
     socket.on('clear_chat', async (data) => {
         if (data.password === ADMIN_PASSWORD) {
             if (MONGO_URI) await Message.deleteMany({});
@@ -90,7 +92,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // أحداث مكالمات الصوت والفيديو
     socket.on('call-user', (data) => socket.broadcast.emit('incoming-call', data));
     socket.on('answer-call', (data) => socket.broadcast.emit('call-answered', data));
     socket.on('ice-candidate', (candidate) => socket.broadcast.emit('ice-candidate', candidate));
