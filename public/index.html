@@ -85,10 +85,43 @@
             padding: 10px;
             margin-bottom: 10px;
             background: #0b0f19;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .msg { margin-bottom: 10px; line-height: 1.4; word-wrap: break-word; }
-        .msg span { font-weight: bold; color: #818cf8; }
+        .msg {
+            background: #1e293b;
+            padding: 8px 12px;
+            border-radius: 10px;
+            max-width: 80%;
+            align-self: flex-start;
+            position: relative;
+            line-height: 1.4;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        .msg.my-msg {
+            background: #3730a3;
+            align-self: flex-end;
+        }
+
+        .msg .sender-name {
+            font-weight: bold;
+            color: #818cf8;
+            font-size: 12px;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .msg .msg-time {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 4px;
+            text-align: left;
+            display: block;
+        }
 
         .input-bar { display: flex; gap: 5px; align-items: center; position: relative; }
         .emoji-btn { width: 45px; background: #334155; font-size: 18px; }
@@ -122,17 +155,15 @@
 </head>
 <body>
 
-<!-- 1. شاشة الدخول بالتاريخ المميز -->
 <div id="login-screen" class="box" style="max-width: 400px;">
     <h2 style="text-align: center;">Letschat 💬</h2>
     <input type="text" id="username" placeholder="اسم المستخدم...">
-    <label for="special-date" style="font-size: 12px; color: #94a3b8;">اختر التاريخ المميز (يجب أن يكون 13.01.2007):</label>
+    <label for="special-date" style="font-size: 12px; color: #94a3b8;">اختر التاريخ المميز:</label>
     <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
     <button onclick="login()">دخول الغرفة</button>
     <p id="error-msg" style="color: var(--danger); text-align: center; font-size: 13px;"></p>
 </div>
 
-<!-- 2. واجهة الشات الرئيسية الشاملة -->
 <div id="chat-screen" class="box hidden">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h3 style="margin:0;">غرفة الدردشة الخاصة</h3>
@@ -147,13 +178,11 @@
                 <input type="text" id="message-input" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
                 
-                <!-- لوحة الإيموجي الموسعة -->
                 <div id="emoji-picker" class="emoji-picker hidden">
                     <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('🤣')">🤣</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('😍')">😍</span><span onclick="addEmoji('😎')">😎</span>
                     <span onclick="addEmoji('😇')">😇</span><span onclick="addEmoji('🥳')">🥳</span><span onclick="addEmoji('🤔')">🤔</span><span onclick="addEmoji('😅')">😅</span><span onclick="addEmoji('😭')">😭</span><span onclick="addEmoji('😜')">😜</span>
                     <span onclick="addEmoji('🙈')">🙈</span><span onclick="addEmoji('🔥')">🔥</span><span onclick="addEmoji('✨')">✨</span><span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('💯')">💯</span><span onclick="addEmoji('🚀')">🚀</span>
                     <span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('👎')">👎</span><span onclick="addEmoji('👏')">👏</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('🙏')">🙏</span><span onclick="addEmoji('🤝')">🤝</span>
-                    <span onclick="addEmoji('💖')">💖</span><span onclick="addEmoji('💙')">💙</span><span onclick="addEmoji('💥')">💥</span><span onclick="addEmoji('⭐')">⭐</span><span onclick="addEmoji('☕')">☕</span><span onclick="addEmoji('🍕')">🍕</span>
                 </div>
             </div>
             
@@ -161,7 +190,6 @@
             <button onclick="sendMessage()">إرسال الرسالة</button>
         </div>
 
-        <!-- الأعضاء النشطين -->
         <div class="users-sidebar">
             <h4>متصل الآن (<span id="user-count">0</span>)</h4>
             <div id="users-list"></div>
@@ -170,7 +198,6 @@
     
     <hr style="border-color: var(--border); margin: 15px 0;">
     
-    <!-- أزرار المكالمات وإغلاقها -->
     <h4 style="margin: 0 0 5px 0;">المكالمات الصوتي / الفيديو</h4>
     <div class="call-controls">
         <button class="btn-call" onclick="startCall(true)">🎥 فيديو</button>
@@ -189,7 +216,15 @@
     const socket = io();
     let localStream, peerConnection;
     let currentUser = '';
+    let unreadCount = 0;
+    const defaultTitle = "Letschat - التطبيق الكامل";
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    // إدارة تنبيهات العنوان عند مغادرة التبويب
+    window.addEventListener('focus', () => {
+        unreadCount = 0;
+        document.title = defaultTitle;
+    });
 
     function login() {
         const username = document.getElementById('username').value.trim();
@@ -228,7 +263,6 @@
         box.scrollTop = box.scrollHeight;
     });
 
-    // استرجاع الرسائل المخزنة في MongoDB
     socket.on('load_messages', (messages) => {
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
@@ -270,25 +304,41 @@
 
     socket.on('receive_message', (data) => {
         renderMessage(data);
+
+        // إذا كانت الصفحة غير مفعلة (المستخدم في تبويب آخر)، قم بزيادة التنبيه
+        if (document.hidden) {
+            unreadCount++;
+            document.title = `(${unreadCount}) 📩 رسالة جديدة! - Letschat`;
+        }
     });
 
     function renderMessage(data) {
         const box = document.getElementById('chat-box');
-        let content = `<div class="msg"><span>${data.sender || data.username}:</span> ${data.text || ''}`;
+        const isMyMsg = (data.sender || data.username) === currentUser;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${isMyMsg ? 'my-msg' : ''}`;
+
+        let content = `<span class="sender-name">${data.sender || data.username}</span>`;
+        if (data.text) content += `<div>${data.text}</div>`;
         
         if (data.file) {
             if (data.fileType && data.fileType.startsWith('image/')) {
-                content += `<br><img src="${data.file}" style="max-width:180px; border-radius:6px; margin-top:5px;">`;
+                content += `<img src="${data.file}" style="max-width:180px; border-radius:6px; margin-top:5px;">`;
             } else {
-                content += `<br><a href="${data.file}" download="${data.fileName}" style="color:#38bdf8;">تحميل الملف (${data.fileName})</a>`;
+                content += `<a href="${data.file}" download="${data.fileName}" style="color:#38bdf8;">تحميل الملف (${data.fileName})</a>`;
             }
         }
-        content += `</div>`;
-        box.innerHTML += content;
+
+        // عرض الوقت الممرر من السيرفر أو الوقت الحالي
+        const timeVal = data.time || new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+        content += `<span class="msg-time">${timeVal}</span>`;
+
+        msgDiv.innerHTML = content;
+        box.appendChild(msgDiv);
         box.scrollTop = box.scrollHeight;
     }
 
-    // مسح الشات بكلمة السر
     function clearChat() {
         const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
         if (password) socket.emit('clear_chat', { password });
@@ -301,7 +351,6 @@
 
     socket.on('error_message', (msg) => alert(msg));
 
-    // المكالمات الصوتية والفيديو
     async function startCall(isVideo) {
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
