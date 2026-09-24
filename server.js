@@ -22,7 +22,7 @@ if (MONGO_URI) {
         .catch((err) => console.error('❌ خطأ MongoDB:', err));
 }
 
-// نموذج الرسائل مع حفظ وقت الإنشاء
+// نموذج الرسائل مع حفظ الوقت المحسب
 const MessageSchema = new mongoose.Schema({
     sender: String,
     text: String,
@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_message', async (data) => {
-        // توليد الوقت الحالي بصيغة (مثلاً 03:45 م)
+        // حساب وقت الإرسال الفعلي لحظة استلام السيرفر للرسالة
         const now = new Date();
         const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
