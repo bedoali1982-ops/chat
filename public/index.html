@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letschat - التطبيق الكامل</title>
+    <title>Letschat</title>
     <style>
         :root {
             --primary: #4f46e5;
@@ -330,15 +330,19 @@
             }
         }
 
-        // عرض الوقت الممرر من السيرفر أو الوقت الحالي
-        const timeVal = data.time || new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+        // استخدام وقت الإرسال المحفوظ، وفي حال عدم وجوده يتم حسابه من تاريخ الإنشاء الأصلي createdAt
+        let timeVal = data.time;
+        if (!timeVal) {
+            const msgDate = data.createdAt ? new Date(data.createdAt) : new Date();
+            timeVal = msgDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
         content += `<span class="msg-time">${timeVal}</span>`;
 
         msgDiv.innerHTML = content;
         box.appendChild(msgDiv);
         box.scrollTop = box.scrollHeight;
     }
-
     function clearChat() {
         const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
         if (password) socket.emit('clear_chat', { password });
