@@ -3,452 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Let's chat</title>
-    <!-- استدعاء مكتبة الإيموجي الشاملة -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
-    
+    <title>تطبيق الشات الجماعي</title>
+    <!-- استدعاء مكتبة Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.9);
-            --text: #f8fafc;
-            --border: #334155;
-            --danger: #ef4444;
-            --success: #22c55e;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: var(--text);
-            margin: 0;
-            padding: 15px;
-            min-height: 100vh;
+            background-color: #f0f2f5;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
         }
 
-        .box {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            padding: 20px;
-            border-radius: 16px;
+        /* --- شاشة التسجيل --- */
+        #login-screen {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        #login-screen h2 {
+            margin-bottom: 20px;
+            color: #128C7E;
+        }
+
+        #login-screen input {
             width: 100%;
-            max-width: 850px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
         }
 
-        .hidden { display: none !important; }
-
-        input, select, button {
+        #login-screen button {
             width: 100%;
-            padding: 10px;
-            margin: 6px 0;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: #0f172a;
-            color: var(--text);
-            box-sizing: border-box;
-        }
-
-        button {
-            background: var(--primary);
+            padding: 12px;
+            background-color: #128C7E;
+            color: white;
             border: none;
+            border-radius: 6px;
+            font-size: 16px;
             cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #login-screen button:hover {
+            background-color: #075E54;
+        }
+
+        /* --- شاشة الشات --- */
+        #chat-screen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            max-width: 700px;
+            height: 90vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* الهيدر */
+        .chat-header {
+            background-color: #075E54;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-buttons button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+            font-size: 13px;
+        }
+
+        .header-buttons button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .header-buttons .clear-btn {
+            background-color: #d32f2f;
+        }
+
+        .header-buttons .clear-btn:hover {
+            background-color: #9a0007;
+        }
+
+        /* منطقة الرسائل */
+        #messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #e5ddd5;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            position: relative;
+            word-wrap: break-word;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .my-message {
+            align-self: flex-end;
+            background-color: #dcf8c6;
+            border-bottom-left-radius: 10px;
+        }
+
+        .other-message {
+            align-self: flex-start;
+            background-color: white;
+            border-bottom-right-radius: 10px;
+        }
+
+        .sender-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #075E54;
+            margin-bottom: 3px;
+        }
+
+        .message-text {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .message-file {
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .message-file img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        .message-file a {
+            color: #128C7E;
+            text-decoration: underline;
             font-weight: bold;
         }
 
-        button:hover { background: var(--primary-hover); }
-
-        .chat-container { display: flex; gap: 15px; }
-        .chat-main { flex: 3; }
-        .users-sidebar {
-            flex: 1;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-            height: 320px;
-            overflow-y: auto;
+        /* 🕒 تنسيق تاريخ ووقت الرسالة */
+        .message-time {
+            font-size: 10px;
+            color: #777;
+            align-self: flex-end;
+            margin-top: 2px;
+            direction: ltr; /* لضمان أرقام الوقت والتاريخ بشكل مريح */
         }
 
-        .users-sidebar h4 { margin: 0 0 10px 0; color: var(--success); font-size: 13px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
-        .user-item { padding: 4px 0; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-        .online-dot { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; }
-
-        #chat-box {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: #0b0f19;
+        /* منطقة إدخال الرسائل */
+        .chat-input-container {
+            padding: 12px;
+            background: #f0f0f0;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 8px;
         }
 
-        .msg {
-            background: #1e293b;
-            padding: 8px 12px;
-            border-radius: 10px;
-            max-width: 80%;
-            align-self: flex-start;
-            position: relative;
-            line-height: 1.4;
-            word-wrap: break-word;
+        .chat-input-container input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
             font-size: 14px;
         }
 
-        .msg.my-msg {
-            background: #3730a3;
-            align-self: flex-end;
+        .file-label {
+            cursor: pointer;
+            font-size: 20px;
+            padding: 5px;
         }
 
-        .msg .sender-name {
-            font-weight: bold;
-            color: #818cf8;
-            font-size: 12px;
-            margin-bottom: 3px;
-            display: block;
+        #file-input {
+            display: none;
         }
 
-        .msg .msg-time {
-            font-size: 10px;
-            color: #94a3b8;
-            margin-top: 4px;
-            text-align: left;
-            display: block;
+        .send-btn {
+            background-color: #128C7E;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
         }
 
-        .input-bar { display: flex; gap: 5px; align-items: center; position: relative; }
-        .emoji-btn { width: 45px; background: #334155; font-size: 18px; }
-
-        emoji-picker {
-            position: absolute;
-            bottom: 50px;
-            right: 0;
-            z-index: 10;
-            --num-columns: 8;
-            --category-emoji-size: 1.125rem;
-            height: 320px;
-            width: 320px;
-        }
-
-        emoji-picker.dark {
-            --background: #1e293b;
-            --border-color: #334155;
-            --input-border-color: #334155;
-            --input-placeholder-color: #94a3b8;
-        }
-
-        .call-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .btn-call { background: #059669; }
-        .btn-hangup { background: var(--danger); }
-
-        .video-grid { display: flex; gap: 10px; margin-top: 10px; }
-        video { width: 50%; height: 150px; border-radius: 8px; background: #000; border: 1px solid var(--border); object-fit: cover; }
-
-        .btn-logout {
-            background: #475569;
-            width: auto;
-            padding: 6px 12px;
-        }
-        .btn-logout:hover {
-            background: #334155;
+        .send-btn:hover {
+            background-color: #075E54;
         }
     </style>
 </head>
 <body>
 
-<div id="login-screen" class="box" style="max-width: 400px;">
-    <h2 style="text-align: center;">Let's chat 💬</h2>
-    <input type="text" id="username" placeholder="اسم المستخدم...">
-    <!-- تم تعديل نص Label ليصبح عاماً دون إظهار التاريخ المطلوب -->
-    <label for="special-date" style="font-size: 12px; color: #94a3b8;">أدخل تاريخ الوصول الخاص:</label>
-    <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
-    <button onclick="login()">دخول الغرفة</button>
-    <p id="error-msg" style="color: var(--danger); text-align: center; font-size: 13px; display: none;"></p>
-</div>
-
-<div id="chat-screen" class="box hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin:0;">غرفة الدردشة الخاصة</h3>
-        <div style="display: flex; gap: 8px;">
-            <button style="width: auto; background: var(--danger); padding: 6px 12px;" onclick="clearChat()">🗑️ مسح الشات</button>
-            <!-- 🚪 زر تسجيل الخروج الجديد -->
-            <button class="btn-logout" onclick="logout()">🚪 خروج</button>
-        </div>
+    <!-- 1. شاشة التسجيل -->
+    <div id="login-screen">
+        <h2>مرحباً بك في الشات</h2>
+        <input type="text" id="username-input" placeholder="أدخل اسمك هنا..." />
+        <button onclick="login()">دخول</button>
     </div>
-    
-    <div class="chat-container">
-        <div class="chat-main">
-            <div id="chat-box"></div>
-            
-            <div class="input-bar">
-                <input type="text" id="message-input" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
-                <emoji-picker id="picker" class="dark hidden"></emoji-picker>
+
+    <!-- 2. شاشة الشات -->
+    <div id="chat-screen">
+        <div class="chat-header">
+            <h3 id="user-display">الشات الجماعي</h3>
+            <div class="header-buttons">
+                <button class="clear-btn" onclick="clearChat()">🗑️ مسح الشات</button>
+                <button onclick="logout()">خروج</button>
             </div>
+        </div>
+
+        <div id="messages-container"></div>
+
+        <div class="chat-input-container">
+            <label for="file-input" class="file-label" title="إرفاق ملف أو صورة">📎</label>
+            <input type="file" id="file-input" onchange="handleFileSelect(event)">
             
-            <input type="file" id="file-input">
-            <button onclick="sendMessage()">إرسال الرسالة</button>
-        </div>
-
-        <div class="users-sidebar">
-            <h4>متصل الآن (<span id="user-count">0</span>)</h4>
-            <div id="users-list"></div>
+            <input type="text" id="message-input" placeholder="اكتب رسالتك..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">إرسال</button>
         </div>
     </div>
-    
-    <hr style="border-color: var(--border); margin: 15px 0;">
-    
-    <h4 style="margin: 0 0 5px 0;">المكالمات الصوتي / الفيديو</h4>
-    <div class="call-controls">
-        <button class="btn-call" onclick="startCall(true)">🎥 فيديو</button>
-        <button class="btn-call" onclick="startCall(false)">📞 صوتية</button>
-        <button class="btn-hangup" onclick="endCall()">❌ إنهاء المكالمة</button>
-    </div>
 
-    <div class="video-grid">
-        <video id="localVideo" autoplay muted></video>
-        <video id="remoteVideo" autoplay></video>
-    </div>
-</div>
+    <script>
+        const socket = io();
+        let currentUser = '';
+        let selectedFileData = null;
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    const socket = io();
-    let localStream, peerConnection;
-    let currentUser = '';
-    let unreadCount = 0;
-    const defaultTitle = "Let's chat";
-    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        // عند فتح الصفحة: التحقق من وجود جلسة محفوظة
+        window.onload = () => {
+            const savedUser = sessionStorage.getItem('chat_username');
+            if (savedUser) {
+                currentUser = savedUser;
+                showChatScreen();
+            }
+        };
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const picker = document.getElementById('picker');
-        picker.addEventListener('emoji-click', event => {
-            const input = document.getElementById('message-input');
-            input.value += event.detail.unicode;
-            input.focus();
-        });
-
-        const savedUser = sessionStorage.getItem('chat_username');
-        const savedDate = sessionStorage.getItem('chat_date');
-
-        if (savedUser && savedDate) {
-            currentUser = savedUser;
-            socket.emit('join', { username: savedUser, date: savedDate });
+        // تسجيل الدخول
+        function login() {
+            const username = document.getElementById('username-input').value.trim();
+            if (!username) {
+                alert('يرجى إدخال اسمك أولاً!');
+                return;
+            }
+            currentUser = username;
+            sessionStorage.setItem('chat_username', currentUser);
+            showChatScreen();
         }
-    });
 
-    window.addEventListener('focus', () => {
-        unreadCount = 0;
-        document.title = defaultTitle;
-    });
+        function showChatScreen() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('chat-screen').style.display = 'flex';
+            document.getElementById('user-display').innerText = `المستخدم: ${currentUser}`;
+        }
 
-    function login() {
-        const username = document.getElementById('username').value.trim();
-        const dateInput = document.getElementById('special-date').value;
-        if (!username || !dateInput) return alert('برجاء ملء جميع البيانات');
+        // تسجيل الخروج
+        function logout() {
+            sessionStorage.removeItem('chat_username');
+            location.reload();
+        }
 
-        const parts = dateInput.split('-');
-        const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-        currentUser = username;
+        // استقبال الملفات المختارة
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        sessionStorage.setItem('chat_username', username);
-        sessionStorage.setItem('chat_date', formattedDate);
-
-        socket.emit('join', { username, date: formattedDate });
-    }
-
-    // 🚪 دالة تسجيل الخروج المسؤولة عن مسح الجلسة وإعادة المستخدم لصفحة الدخول
-    function logout() {
-        sessionStorage.removeItem('chat_username');
-        sessionStorage.removeItem('chat_date');
-        location.reload();
-    }
-
-    socket.on('access-denied', (msg) => {
-        sessionStorage.removeItem('chat_username');
-        sessionStorage.removeItem('chat_date');
-        const errElem = document.getElementById('error-msg');
-        errElem.innerText = msg;
-        errElem.style.display = 'block';
-    });
-
-    socket.on('access-granted', () => {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('chat-screen').classList.remove('hidden');
-    });
-
-    socket.on('update-user-list', (users) => {
-        const list = document.getElementById('users-list');
-        document.getElementById('user-count').innerText = users.length;
-        list.innerHTML = '';
-        users.forEach(user => {
-            list.innerHTML += `<div class="user-item"><span class="online-dot"></span>${user}</div>`;
-        });
-    });
-
-    socket.on('system-message', (msg) => {
-        const box = document.getElementById('chat-box');
-        box.innerHTML += `<div style="color:#94a3b8; font-size:11px; text-align:center; margin: 5px 0;">${msg}</div>`;
-        box.scrollTop = box.scrollHeight;
-    });
-
-    socket.on('load_messages', (messages) => {
-        const box = document.getElementById('chat-box');
-        box.innerHTML = '';
-        messages.forEach(data => renderMessage(data));
-        box.scrollTop = box.scrollHeight;
-    });
-
-    function toggleEmojiPicker() {
-        document.getElementById('picker').classList.toggle('hidden');
-    }
-
-    function sendMessage() {
-        const text = document.getElementById('message-input').value;
-        const fileInput = document.getElementById('file-input');
-        const file = fileInput.files[0];
-
-        if (!text && !file) return;
-
-        if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                socket.emit('send_message', { sender: currentUser, text, file: e.target.result, fileName: file.name, fileType: file.type });
+                selectedFileData = {
+                    file: e.target.result,
+                    fileName: file.name,
+                    fileType: file.type
+                };
+                alert(`تم تحديد الملف: ${file.name}`);
             };
             reader.readAsDataURL(file);
-        } else {
-            socket.emit('send_message', { sender: currentUser, text });
         }
 
-        document.getElementById('message-input').value = '';
-        fileInput.value = '';
-        document.getElementById('picker').classList.add('hidden');
-    }
+        // إرسال الرسالة
+        function sendMessage() {
+            const textInput = document.getElementById('message-input');
+            const text = textInput.value.trim();
 
-    socket.on('receive_message', (data) => {
-        renderMessage(data);
+            if (!text && !selectedFileData) return;
 
-        if (document.hidden) {
-            unreadCount++;
-            document.title = `(${unreadCount}) 📩 رسالة جديدة! - Let's chat`;
+            const msgPayload = {
+                sender: currentUser,
+                text: text,
+                file: selectedFileData ? selectedFileData.file : null,
+                fileName: selectedFileData ? selectedFileData.fileName : null,
+                fileType: selectedFileData ? selectedFileData.fileType : null
+            };
+
+            socket.emit('send_message', msgPayload);
+
+            // تفريغ المدخلات
+            textInput.value = '';
+            document.getElementById('file-input').value = '';
+            selectedFileData = null;
         }
-    });
 
-    function renderMessage(data) {
-        const box = document.getElementById('chat-box');
-        const isMyMsg = (data.sender || data.username) === currentUser;
-
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `msg ${isMyMsg ? 'my-msg' : ''}`;
-
-        let content = `<span class="sender-name">${data.sender || data.username}</span>`;
-        if (data.text) content += `<div>${data.text}</div>`;
-        
-        if (data.file) {
-            if (data.fileType && data.fileType.startsWith('image/')) {
-                content += `<img src="${data.file}" style="max-width:180px; border-radius:6px; margin-top:5px;">`;
-            } else {
-                content += `<a href="${data.file}" download="${data.fileName}" style="color:#38bdf8;">تحميل الملف (${data.fileName})</a>`;
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         }
 
-let timeVal = '';
-if (data.createdAt) {
-    const msgDate = new Date(data.createdAt);
-    timeVal = msgDate.toLocaleTimeString(navigator.language || 'ar-EG', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: true 
-    });
-}
+        // استقبال الرسائل القديمة فور الدخول
+        socket.on('load_old_messages', (messages) => {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+            messages.forEach(msg => appendMessage(msg));
+            scrollToBottom();
+        });
 
-        content += `<span class="msg-time">${timeVal}</span>`;
+        // استقبال رسالة جديدة من السيرفر
+        socket.on('receive_message', (msg) => {
+            appendMessage(msg);
+            scrollToBottom();
+        });
 
-        msgDiv.innerHTML = content;
-        box.appendChild(msgDiv);
-        box.scrollTop = box.scrollHeight;
-    }
-
-    function clearChat() {
-        const password = prompt("أدخل كلمة السر لمسح جميع الرسائل:");
-        if (password) socket.emit('clear_chat', { password });
-    }
-
-    socket.on('chat_cleared', () => {
-        document.getElementById('chat-box').innerHTML = '';
-        alert('✅ تم مسح جميع الرسائل بنجاح.');
-    });
-
-    socket.on('error_message', (msg) => alert(msg));
-
-    async function startCall(isVideo) {
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-            peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('call-user', { offer, isVideo });
-        } catch (err) {
-            alert('تعذر الوصول للكاميرا/المايك.');
+        // دوال مسح الشات
+        function clearChat() {
+            const password = prompt('أدخل كلمة السر لمسح الشات كاملاً:');
+            if (password) {
+                socket.emit('clear_chat', { password });
+            }
         }
-    }
 
-    function endCall() {
-        if (peerConnection) { peerConnection.close(); peerConnection = null; }
-        if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-        document.getElementById('localVideo').srcObject = null;
-        document.getElementById('remoteVideo').srcObject = null;
-        socket.emit('end-call');
-    }
+        socket.on('chat_cleared', () => {
+            document.getElementById('messages-container').innerHTML = '';
+            alert('تم مسح جميع الرسائل بنجاح.');
+        });
 
-    socket.on('incoming-call', async ({ offer, isVideo }) => {
-        const typeStr = isVideo ? 'فيديو' : 'صوتية';
-        if (confirm(`مكالمة ${typeStr} واردة، هل تريد الرد؟`)) {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: isVideo, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
+        socket.on('error_message', (msg) => {
+            alert(msg);
+        });
 
-            peerConnection = new RTCPeerConnection(rtcConfig);
-            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        // 🕒 عرض وتنسيق الرسائل مع التاريخ والوقت
+        function appendMessage(data) {
+            const container = document.getElementById('messages-container');
+            const isMine = data.sender === currentUser;
 
-            peerConnection.onicecandidate = e => { if (e.candidate) socket.emit('ice-candidate', e.candidate); };
-            peerConnection.ontrack = e => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+            // تنسيق التاريخ والوقت كاملاً بحسب جهاز المستخدم
+            let formattedDateTime = '';
+            if (data.createdAt) {
+                const msgDate = new Date(data.createdAt);
+                formattedDateTime = msgDate.toLocaleString(navigator.language || 'ar-EG', { 
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                });
+            }
 
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('answer-call', answer);
+            // بناء عنصر الرسالة
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isMine ? 'my-message' : 'other-message'}`;
+
+            let htmlContent = `<span class="sender-name">${data.sender}</span>`;
+
+            if (data.text) {
+                htmlContent += `<p class="message-text">${data.text}</p>`;
+            }
+
+            if (data.file) {
+                htmlContent += `<div class="message-file">`;
+                if (data.fileType && data.fileType.startsWith('image/')) {
+                    htmlContent += `<img src="${data.file}" alt="صورة مرفقة" />`;
+                } else {
+                    htmlContent += `<a href="${data.file}" download="${data.fileName}">📁 ${data.fileName}</a>`;
+                }
+                htmlContent += `</div>`;
+            }
+
+            htmlContent += `<span class="message-time">${formattedDateTime}</span>`;
+
+            msgDiv.innerHTML = htmlContent;
+            container.appendChild(msgDiv);
         }
-    });
 
-    socket.on('call-answered', async (answer) => {
-        if (peerConnection) await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-    });
-
-    socket.on('ice-candidate', async (candidate) => {
-        if (peerConnection) await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    });
-
-    socket.on('call-ended', () => {
-        alert('تم إنهاء المكالمة من الطرف الآخر.');
-        endCall();
-    });
-</script>
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
 </body>
 </html>
