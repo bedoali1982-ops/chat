@@ -61,19 +61,19 @@ io.on('connection', (socket) => {
         io.emit('update-user-list', Array.from(activeUsers.values()));
     });
 
-    socket.on('send_message', async (data) => {
-        // حساب وقت الإرسال الفعلي لحظة استلام السيرفر للرسالة
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+    socket.on('send_message', (data) => {
+    const msgData = {
+        sender: data.sender,
+        text: data.text,
+        file: data.file,
+        fileName: data.fileName,
+        fileType: data.fileType,
+        createdAt: new Date() // ✅ يرسل الوقت القياسي العالمي الكامل
+    };
 
-        const newMsgData = {
-            sender: socket.username || data.sender,
-            text: data.text,
-            file: data.file,
-            fileName: data.fileName,
-            fileType: data.fileType,
-            time: timeString
-        };
+    // حفظ في قاعدة البيانات
+    // io.emit('receive_message', msgData);
+});
 
         if (MONGO_URI) {
             const savedMsg = new Message(newMsgData);
