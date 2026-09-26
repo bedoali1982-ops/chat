@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
         socket.emit('access-granted');
 
         try {
-            const oldMessages = async Message.find().sort({ createdAt: 1 });
+            const oldMessages = await Message.find().sort({ createdAt: 1 });
             socket.emit('load_messages', oldMessages);
         } catch (err) {
             console.error(err);
