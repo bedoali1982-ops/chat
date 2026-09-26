@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
         socket.emit('access-granted');
 
         try {
-            const oldMessages = await Message.find().sort({ createdAt: 1 });
+            const oldMessages = async Message.find().sort({ createdAt: 1 });
             socket.emit('load_messages', oldMessages);
         } catch (err) {
             console.error(err);
@@ -77,7 +77,7 @@ io.on('connection', (socket) => {
 
         if (MONGO_URI) {
             const savedMsg = new Message(newMsgData);
-            await savedMsg.save();
+            async savedMsg.save();
         }
 
         io.emit('receive_message', newMsgData);
@@ -85,7 +85,7 @@ io.on('connection', (socket) => {
 
     socket.on('clear_chat', async (data) => {
         if (data.password === ADMIN_PASSWORD) {
-            if (MONGO_URI) await Message.deleteMany({});
+            if (MONGO_URI) async Message.deleteMany({});
             io.emit('chat_cleared');
         } else {
             socket.emit('error_message', '❌ كلمة السر غير صحيحة!');
