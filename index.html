@@ -362,12 +362,9 @@
             }
         }
 
-let timeVal = data.time;
-
-// إذا لم يكن الوقت محدداً من السيرفر كـ Text، قم بتوليده بحسب توقيت جهاز المستخدم
-if (!timeVal) {
-    const msgDate = data.createdAt ? new Date(data.createdAt) : new Date();
-    
+let timeVal = '';
+if (data.createdAt) {
+    const msgDate = new Date(data.createdAt);
     timeVal = msgDate.toLocaleTimeString(navigator.language || 'ar-EG', { 
         hour: '2-digit', 
         minute: '2-digit', 
