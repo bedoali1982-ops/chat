@@ -77,7 +77,7 @@ io.on('connection', (socket) => {
 
         if (MONGO_URI) {
             const savedMsg = new Message(newMsgData);
-            async savedMsg.save();
+            await savedMsg.save();
         }
 
         io.emit('receive_message', newMsgData);
