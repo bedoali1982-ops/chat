@@ -6,89 +6,105 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { maxHttpBufferSize: 1e7, cors: { origin: "*" } });
 
-// 1. إعداد البورت من بيئة التشغيل (مهم لـ Render)
-const PORT = process.env.PORT || 3000;
+app.use(express.static(path.join(__dirname)));
 
-// 2. الاتصال بقاعدة البيانات MongoDB (قم بتغيير الرابط برابط MongoDB Atlas الخاص بك إن وجد)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/chatApp';
-
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ تم الاتصال بقاعدة البيانات MongoDB بنجاح'))
-  .catch((err) => console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err));
-
-// 3. تعريف هيكل الرسالة (Schema & Model)
-const messageSchema = new mongoose.Schema({
-    sender: { type: String, required: true },
-    text: { type: String, default: '' },
-    file: { type: String, default: null },
-    fileName: { type: String, default: null },
-    fileType: { type: String, default: null },
-    createdAt: { type: Date, default: Date.now } // التوقيت القياسي الموحد
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const Message = mongoose.model('Message', messageSchema);
+// الاتصال بـ MongoDB
+const MONGO_URI = process.env.MONGO_URI;
+if (MONGO_URI) {
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log('✅ تم الاتصال بـ MongoDB بنجاح'))
+        .catch((err) => console.error('❌ خطأ MongoDB:', err));
+}
 
-// 4. تقديم الملفات الثابتة (مجلد المترجم/العميل)
-app.use(express.static(path.join(__dirname, 'public')));
+// نموذج الرسائل مع حفظ الوقت المحسب
+const MessageSchema = new mongoose.Schema({
+    sender: String,
+    text: String,
+    file: String,
+    fileName: String,
+    fileType: String,
+    time: String,
+    createdAt: { type: Date, default: Date.now }
+});
+const Message = mongoose.model('Message', MessageSchema);
 
-// 5. إدارة اتصالات Socket.io
-io.on('connection', async (socket) => {
-    console.log(`🔌 مستخدم جديد متصل: ${socket.id}`);
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
+const activeUsers = new Map();
 
-    // أ) تحميل الرسائل القديمة فور دخول المستخدم
-    try {
-        const oldMessages = await Message.find().sort({ createdAt: 1 });
-        socket.emit('load_old_messages', oldMessages);
-    } catch (err) {
-        console.error('❌ خطأ أثناء تجليب الرسائل القديمة:', err);
-    }
+io.on('connection', (socket) => {
 
-    // ب) استقبال ورسائل جديدة
+    socket.on('join', async ({ username, date }) => {
+        if (date !== '13.01.2009') {
+            socket.emit('access-denied', 'التاريخ غير صحيح!');
+            return;
+        }
+
+        socket.username = username;
+        activeUsers.set(socket.id, username);
+
+        socket.emit('access-granted');
+
+        try {
+            const oldMessages = await Message.find().sort({ createdAt: 1 });
+            socket.emit('load_messages', oldMessages);
+        } catch (err) {
+            console.error(err);
+        }
+
+        io.emit('system-message', `${username} انضم إلى الدردشة.`);
+        io.emit('update-user-list', Array.from(activeUsers.values()));
+    });
+
     socket.on('send_message', async (data) => {
-        try {
-            const msgData = {
-                sender: data.sender,
-                text: data.text,
-                file: data.file,
-                fileName: data.fileName,
-                fileType: data.fileType,
-                createdAt: new Date() // يرسل الوقت الخام
-            };
+        // حساب وقت الإرسال الفعلي لحظة استلام السيرفر للرسالة
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            const savedMsg = new Message(msgData);
-            await savedMsg.save(); // ✅ استخدام await بشكل صحيح داخل async
+        const newMsgData = {
+            sender: socket.username || data.sender,
+            text: data.text,
+            file: data.file,
+            fileName: data.fileName,
+            fileType: data.fileType,
+            time: timeString
+        };
 
-            // بث الرسالة للجميع
-            io.emit('receive_message', savedMsg);
-        } catch (err) {
-            console.error('❌ خطأ أثناء حفظ أو إرسال الرسالة:', err);
+        if (MONGO_URI) {
+            const savedMsg = new Message(newMsgData);
+            await savedMsg.save();
         }
+
+        io.emit('receive_message', newMsgData);
     });
 
-    // ج) مسح كافة الرسائل (باستخدام كلمة السر)
     socket.on('clear_chat', async (data) => {
-        try {
-            // يمكنك تغيير كلمة السر هنا
-            if (data.password === '123456') { 
-                await Message.deleteMany({});
-                io.emit('chat_cleared');
-            } else {
-                socket.emit('error_message', 'كلمة السر غير صحيحة!');
-            }
-        } catch (err) {
-            console.error('❌ خطأ أثناء مسح الشات:', err);
+        if (data.password === ADMIN_PASSWORD) {
+            if (MONGO_URI) await Message.deleteMany({});
+            io.emit('chat_cleared');
+        } else {
+            socket.emit('error_message', '❌ كلمة السر غير صحيحة!');
         }
     });
 
-    // د) عند قطع الاتصال
+    socket.on('call-user', (data) => socket.broadcast.emit('incoming-call', data));
+    socket.on('answer-call', (data) => socket.broadcast.emit('call-answered', data));
+    socket.on('ice-candidate', (candidate) => socket.broadcast.emit('ice-candidate', candidate));
+    socket.on('end-call', () => socket.broadcast.emit('call-ended'));
+
     socket.on('disconnect', () => {
-        console.log(`❌ انقطع اتصال المستخدم: ${socket.id}`);
+        if (socket.username) {
+            activeUsers.delete(socket.id);
+            io.emit('system-message', `${socket.username} غادر الدردشة.`);
+            io.emit('update-user-list', Array.from(activeUsers.values()));
+        }
     });
 });
 
-// 6. تشغيل السيرفر
-server.listen(PORT, () => {
-    console.log(`🚀 السيرفر يعمل الآن على البورت ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 السيرفر يعمل على المنفذ ${PORT}`));
