@@ -362,11 +362,18 @@
             }
         }
 
-        let timeVal = data.time;
-        if (!timeVal) {
-            const msgDate = data.createdAt ? new Date(data.createdAt) : new Date();
-            timeVal = msgDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
-        }
+let timeVal = data.time;
+
+// إذا لم يكن الوقت محدداً من السيرفر كـ Text، قم بتوليده بحسب توقيت جهاز المستخدم
+if (!timeVal) {
+    const msgDate = data.createdAt ? new Date(data.createdAt) : new Date();
+    
+    timeVal = msgDate.toLocaleTimeString(navigator.language || 'ar-EG', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+    });
+}
 
         content += `<span class="msg-time">${timeVal}</span>`;
 
