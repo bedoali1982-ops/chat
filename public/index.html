@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letschat </title>
+    <title>Let's chat</title>
+    <!-- استدعاء مكتبة الإيموجي الشاملة -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+    
     <style>
         :root {
             --primary: #4f46e5;
@@ -125,25 +128,24 @@
 
         .input-bar { display: flex; gap: 5px; align-items: center; position: relative; }
         .emoji-btn { width: 45px; background: #334155; font-size: 18px; }
-        .emoji-picker {
+
+        emoji-picker {
             position: absolute;
             bottom: 50px;
             right: 0;
-            background: #1e293b;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px;
-            width: 260px;
-            height: 160px;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 4px;
             z-index: 10;
+            --num-columns: 8;
+            --category-emoji-size: 1.125rem;
+            height: 320px;
+            width: 320px;
         }
 
-        .emoji-picker span { font-size: 18px; cursor: pointer; text-align: center; padding: 3px; border-radius: 4px; }
-        .emoji-picker span:hover { background: #334155; }
+        emoji-picker.dark {
+            --background: #1e293b;
+            --border-color: #334155;
+            --input-border-color: #334155;
+            --input-placeholder-color: #94a3b8;
+        }
 
         .call-controls { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .btn-call { background: #059669; }
@@ -151,23 +153,37 @@
 
         .video-grid { display: flex; gap: 10px; margin-top: 10px; }
         video { width: 50%; height: 150px; border-radius: 8px; background: #000; border: 1px solid var(--border); object-fit: cover; }
+
+        .btn-logout {
+            background: #475569;
+            width: auto;
+            padding: 6px 12px;
+        }
+        .btn-logout:hover {
+            background: #334155;
+        }
     </style>
 </head>
 <body>
 
 <div id="login-screen" class="box" style="max-width: 400px;">
-    <h2 style="text-align: center;">Letschat 💬</h2>
+    <h2 style="text-align: center;">Let's chat 💬</h2>
     <input type="text" id="username" placeholder="اسم المستخدم...">
-    <label for="special-date" style="font-size: 12px; color: #94a3b8;">اختر التاريخ المميز:</label>
+    <!-- تم تعديل نص Label ليصبح عاماً دون إظهار التاريخ المطلوب -->
+    <label for="special-date" style="font-size: 12px; color: #94a3b8;">أدخل تاريخ الوصول الخاص:</label>
     <input type="date" id="special-date" min="1926-01-01" max="2026-12-31">
     <button onclick="login()">دخول الغرفة</button>
-    <p id="error-msg" style="color: var(--danger); text-align: center; font-size: 13px;"></p>
+    <p id="error-msg" style="color: var(--danger); text-align: center; font-size: 13px; display: none;"></p>
 </div>
 
 <div id="chat-screen" class="box hidden">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h3 style="margin:0;">غرفة الدردشة الخاصة</h3>
-        <button style="width: auto; background: var(--danger); padding: 6px 12px;" onclick="clearChat()">🗑️ مسح الشات</button>
+        <div style="display: flex; gap: 8px;">
+            <button style="width: auto; background: var(--danger); padding: 6px 12px;" onclick="clearChat()">🗑️ مسح الشات</button>
+            <!-- 🚪 زر تسجيل الخروج الجديد -->
+            <button class="btn-logout" onclick="logout()">🚪 خروج</button>
+        </div>
     </div>
     
     <div class="chat-container">
@@ -177,13 +193,7 @@
             <div class="input-bar">
                 <input type="text" id="message-input" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
-                
-                <div id="emoji-picker" class="emoji-picker hidden">
-                    <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('🤣')">🤣</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('😍')">😍</span><span onclick="addEmoji('😎')">😎</span>
-                    <span onclick="addEmoji('😇')">😇</span><span onclick="addEmoji('🥳')">🥳</span><span onclick="addEmoji('🤔')">🤔</span><span onclick="addEmoji('😅')">😅</span><span onclick="addEmoji('😭')">😭</span><span onclick="addEmoji('😜')">😜</span>
-                    <span onclick="addEmoji('🙈')">🙈</span><span onclick="addEmoji('🔥')">🔥</span><span onclick="addEmoji('✨')">✨</span><span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('💯')">💯</span><span onclick="addEmoji('🚀')">🚀</span>
-                    <span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('👎')">👎</span><span onclick="addEmoji('👏')">👏</span><span onclick="addEmoji('🙌')">🙌</span><span onclick="addEmoji('🙏')">🙏</span><span onclick="addEmoji('🤝')">🤝</span>
-                </div>
+                <emoji-picker id="picker" class="dark hidden"></emoji-picker>
             </div>
             
             <input type="file" id="file-input">
@@ -217,10 +227,26 @@
     let localStream, peerConnection;
     let currentUser = '';
     let unreadCount = 0;
-    const defaultTitle = "Letschat";
+    const defaultTitle = "Let's chat";
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    // إدارة تنبيهات العنوان عند مغادرة التبويب
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('picker');
+        picker.addEventListener('emoji-click', event => {
+            const input = document.getElementById('message-input');
+            input.value += event.detail.unicode;
+            input.focus();
+        });
+
+        const savedUser = sessionStorage.getItem('chat_username');
+        const savedDate = sessionStorage.getItem('chat_date');
+
+        if (savedUser && savedDate) {
+            currentUser = savedUser;
+            socket.emit('join', { username: savedUser, date: savedDate });
+        }
+    });
+
     window.addEventListener('focus', () => {
         unreadCount = 0;
         document.title = defaultTitle;
@@ -235,12 +261,25 @@
         const formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
         currentUser = username;
 
+        sessionStorage.setItem('chat_username', username);
+        sessionStorage.setItem('chat_date', formattedDate);
+
         socket.emit('join', { username, date: formattedDate });
     }
 
+    // 🚪 دالة تسجيل الخروج المسؤولة عن مسح الجلسة وإعادة المستخدم لصفحة الدخول
+    function logout() {
+        sessionStorage.removeItem('chat_username');
+        sessionStorage.removeItem('chat_date');
+        location.reload();
+    }
+
     socket.on('access-denied', (msg) => {
-        document.getElementById('error-msg').innerText = msg;
-        document.getElementById('error-msg').style.display = 'block';
+        sessionStorage.removeItem('chat_username');
+        sessionStorage.removeItem('chat_date');
+        const errElem = document.getElementById('error-msg');
+        errElem.innerText = msg;
+        errElem.style.display = 'block';
     });
 
     socket.on('access-granted', () => {
@@ -271,14 +310,7 @@
     });
 
     function toggleEmojiPicker() {
-        document.getElementById('emoji-picker').classList.toggle('hidden');
-    }
-
-    function addEmoji(emoji) {
-        const input = document.getElementById('message-input');
-        input.value += emoji;
-        document.getElementById('emoji-picker').classList.add('hidden');
-        input.focus();
+        document.getElementById('picker').classList.toggle('hidden');
     }
 
     function sendMessage() {
@@ -300,19 +332,19 @@
 
         document.getElementById('message-input').value = '';
         fileInput.value = '';
+        document.getElementById('picker').classList.add('hidden');
     }
 
     socket.on('receive_message', (data) => {
         renderMessage(data);
 
-        // إذا كانت الصفحة غير مفعلة (المستخدم في تبويب آخر)، قم بزيادة التنبيه
         if (document.hidden) {
             unreadCount++;
-            document.title = `(${unreadCount}) 📩 رسالة جديدة! - Letschat`;
+            document.title = `(${unreadCount}) 📩 رسالة جديدة! - Let's chat`;
         }
     });
 
-   function renderMessage(data) {
+    function renderMessage(data) {
         const box = document.getElementById('chat-box');
         const isMyMsg = (data.sender || data.username) === currentUser;
 
@@ -330,7 +362,6 @@
             }
         }
 
-        // استخدام وقت الإرسال المحفوظ، وفي حال عدم وجوده يتم حسابه من تاريخ الإنشاء الأصلي createdAt
         let timeVal = data.time;
         if (!timeVal) {
             const msgDate = data.createdAt ? new Date(data.createdAt) : new Date();
