@@ -72,7 +72,7 @@ io.on('connection', (socket) => {
             file: data.file,
             fileName: data.fileName,
             fileType: data.fileType,
-            time: timeString
+            time: timeString,
             createdAt: now
         };
 
