@@ -73,6 +73,7 @@ io.on('connection', (socket) => {
             fileName: data.fileName,
             fileType: data.fileType,
             time: timeString
+            createdAt: now
         };
 
         if (MONGO_URI) {
